@@ -99,16 +99,6 @@ sbatch scripts/eval_answer_entropy_zoom.sh
 
 ---
 
-## Results
-
-| Benchmark | VideoZoomer (baseline) | VideoZoomer + Ours | Δ |
-|-----------|----------------------|-------------------|---|
-| LongVideoReason-eval (1k) | 76.10% | **79.20%** | +3.1 |
-| VideoMME (2.7k) | 61.89% | **63.07%** | +1.2 |
-| LongVideoBench-Val (1.3k) | 56.10% | **56.25%** | +0.1 |
-
----
-
 ## Repository Structure
 
 ```
