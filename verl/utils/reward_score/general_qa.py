@@ -42,19 +42,24 @@ class GPT4VisionClient:
 
     def __init__(self, endpoint=None, api_key=None, api_version=None, model=None):
         endpoint = endpoint or os.environ.get("AZURE_OPENAI_VISION_ENDPOINT")
-        api_key = api_key or os.environ.get("AZURE_OPENAI_VISION_API_KEY")
+        azure_api_key = api_key or os.environ.get("AZURE_OPENAI_VISION_API_KEY")
         api_version = api_version or os.environ.get("AZURE_OPENAI_VISION_API_VERSION", "2024-09-01-preview")
-        if not endpoint or not api_key:
-            raise EnvironmentError(
-                "Missing Azure OpenAI Vision credentials. "
-                "Set AZURE_OPENAI_VISION_ENDPOINT and AZURE_OPENAI_VISION_API_KEY."
+        if endpoint and azure_api_key:
+            self.client = openai.AzureOpenAI(
+                azure_endpoint=endpoint,
+                api_version=api_version,
+                api_key=azure_api_key,
             )
-        self.client = openai.AzureOpenAI(
-            azure_endpoint=endpoint,
-            api_version=api_version,
-            api_key=api_key,
-        )
-        self.model = model or os.environ.get("AZURE_OPENAI_VISION_MODEL", "gpt-4o-2024-11-20")
+            self.model = model or os.environ.get("AZURE_OPENAI_VISION_MODEL", "gpt-4o-2024-11-20")
+        else:
+            openai_key = os.environ.get("OPENAI_API_KEY")
+            if not openai_key:
+                raise EnvironmentError(
+                    "Missing OpenAI credentials. Set either "
+                    "(AZURE_OPENAI_VISION_ENDPOINT + AZURE_OPENAI_VISION_API_KEY) or OPENAI_API_KEY."
+                )
+            self.client = openai.OpenAI(api_key=openai_key)
+            self.model = model or os.environ.get("OPENAI_MODEL", "gpt-4o")
 
     def query(
         self, images, prompt: str, system_prompt: str = None, max_retries=3, initial_delay=3
@@ -124,7 +129,13 @@ class GPT4VisionClient:
         print(f"Warning: Failed after {max_retries} attempts")
         return ""
 
-client = GPT4VisionClient()
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = GPT4VisionClient()
+    return _client
 
 # def format_reward(predict_str: str, extra_info: dict = None) -> float:
 #     pattern = re.compile(r"\s*<think>.*?</think>\s*<answer>.*?</answer>\s*", re.DOTALL | re.MULTILINE)
@@ -151,7 +162,7 @@ def inner_acc_reward(prompt:str, predict_str: str, original_answer: str, use_gpt
     # import pdb; pdb.set_trace()
 
     prompt = QUERY_PROMPT.format(question=question, ground_truth=original_answer, prediction=original_predict_str)
-    response = client.query(images=[], prompt=prompt, system_prompt=SYSTEM_PROMPT)
+    response = get_client().query(images=[], prompt=prompt, system_prompt=SYSTEM_PROMPT)
     # if len(response) == 0:
     #     reward = {"is_filter": True, "info": "error with gpt4o"}
     # else:

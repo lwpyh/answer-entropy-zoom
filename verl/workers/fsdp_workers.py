@@ -266,8 +266,12 @@ class ActorRolloutRefWorker(Worker):
 
         # TODO: add transformer policy
         # We force reference policy to use CPUOffload to save memory.
-        # We force turn off CPUOffload for actor because it causes incorrect results when using grad accumulation
-        cpu_offload = None if role == 'actor' else CPUOffload(offload_params=True)
+        # We force turn off CPUOffload for actor because it causes incorrect results when using grad accumulation.
+        # Exception: when param_offload=True in fsdp_config, also use CPUOffload for actor during FSDP init to avoid
+        # GPU OOM when vLLM and FSDP share the same GPU. The manual load/offload in load_fsdp_model_to_gpu /
+        # offload_fsdp_model_to_cpu already skips handles with _offload_params=True, so there is no conflict.
+        actor_param_offload = fsdp_config.get('param_offload', False)
+        cpu_offload = CPUOffload(offload_params=True) if (role != 'actor' or actor_param_offload) else None
         actor_module_fsdp = FSDP(
             actor_module,
             cpu_offload=cpu_offload,
@@ -365,7 +369,9 @@ class ActorRolloutRefWorker(Worker):
                 from verl.workers.rollout.vllm_rollout import FIREvLLMRollout as vLLMRollout
                 from verl.workers.rollout.vllm_rollout import vllm_mode
             else:
-                from verl.workers.rollout.vllm_rollout import vLLMRollout, vllm_mode, vLLMRollout_MultiTurn_Video
+                from verl.workers.rollout.vllm_rollout import vLLMRollout, vllm_mode
+                if vllm_mode == 'spmd':
+                    from verl.workers.rollout.vllm_rollout import vLLMRollout_MultiTurn_Video
             from verl.workers.sharding_manager import FSDPVLLMShardingManager
             log_gpu_memory_usage('Before building vllm_multi_turn rollout', logger=None)
             local_path = copy_to_local(self.config.model.path)

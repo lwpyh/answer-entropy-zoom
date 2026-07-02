@@ -631,7 +631,7 @@ class RayPPOTrainer(object):
 
         self.train_dataloader = StatefulDataLoader(dataset=self.train_dataset,
                                                    batch_size=train_batch_size,
-                                                   num_workers=16,
+                                                   num_workers=4,
                                                    drop_last=True,
                                                    collate_fn=collate_fn,
                                                    sampler=sampler,
@@ -680,7 +680,7 @@ class RayPPOTrainer(object):
                 # Validation datasets are sent to inference engines as a whole batch,
                 # which will schedule the memory themselves.
                 batch_size=val_batch_size,
-                num_workers=16,
+                num_workers=4,
                 shuffle=False,
                 drop_last=False,
                 collate_fn=collate_fn,

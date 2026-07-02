@@ -63,6 +63,10 @@ def make_conversation_multimodal_hf(sample, system_prompt=None, post_prompt=None
     data_source = sample['data_source']
     question_template = OPEN_ENDED_QUESTION_TEMPLATE if data_source in OPEN_ENDED_DATA_SOURCES else RULE_BASED_QUESTION_TEMPLATE
     problem = question_template.format(Question=sample["problem"], post_prompt=post_prompt)
+    # Add <image> placeholder so multimodal_dataset.py can replace it with vision tokens.
+    # Only add if the sample has multimodal data and the problem doesn't already contain <image>.
+    if ('videos' in sample or 'images' in sample) and '<image>' not in problem:
+        problem = '<image>\n' + problem
     prompt = [
         {
             "role": "user",
@@ -457,6 +461,15 @@ class MultiModalDataset(Dataset):
                     place_holder_token = self.processor.image_token
                 else:
                     raw_prompt = prompt_with_chat_template.replace('<image>', '<|vision_start|><|video_pad|><|vision_end|>')
+                    if raw_prompt == prompt_with_chat_template:
+                        # <image> tag was absent from the prompt (dataset doesn't include it).
+                        # Insert it into the user turn so that:
+                        #   - raw_prompt gets a single video placeholder for vLLM
+                        #   - prompt_with_chat_template gets <image> so the while-loop below
+                        #     expands it to the correct number of <|video_pad|> tokens for input_ids
+                        prompt_with_chat_template = prompt_with_chat_template.replace(
+                            '<|im_start|>user\n', '<|im_start|>user\n<image>\n', 1)
+                        raw_prompt = prompt_with_chat_template.replace('<image>', '<|vision_start|><|video_pad|><|vision_end|>')
                     row_dict['multi_modal_data'] = {'video': [self.process_video(image_file, self.video_fps, self.frames_upbound, self.max_pixels, self.min_pixels, storage_system, is_accurate=(not self.fast_seek))[1] for image_file in image_file_list]}
                     row_dict['prompt_img_num'] = 0
                     row_dict['multi_modal_data']['image'] = []

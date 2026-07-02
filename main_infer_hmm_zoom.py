@@ -257,6 +257,17 @@ def _token_entropy(lp_dict: dict) -> float:
     return float(H)
 
 
+def _token_nll(lp_dict: dict) -> float:
+    """
+    Negative log-likelihood of the actually-generated token at this position.
+
+    R1 always uses greedy (T=0) sampling, so the generated token is the argmax
+    over the vocab — i.e. the entry with the highest logprob in the returned
+    top-K dict (vLLM guarantees the sampled token is included in this dict).
+    """
+    return -max(v.logprob for v in lp_dict.values())
+
+
 def _think_token_range(text: str, token_logprobs: list, tokenizer):
     """
     Return (think_text, start_idx, end_idx) — indices into token_logprobs
@@ -583,6 +594,144 @@ def compute_entropy_score(text: str, token_logprobs: list, tokenizer) -> dict:
     }
 
 
+def compute_answer_token_entropy(text: str, token_logprobs: list, tokenizer) -> dict:
+    """
+    Single-pass answer-distribution entropy from greedy R1 logprobs.
+
+    At the position where the model emits its chosen answer (A/B/C/D inside
+    <answer>…</answer>), extract the top-20 logprob dict and read out the
+    log-probabilities of all four option tokens.  Compute Shannon entropy over
+    the normalised {A,B,C,D} distribution.
+
+    This is a zero-cost proxy for answer_entropy (k-sample voting):
+      answer_entropy  → k=5 forward passes, empirical answer distribution
+      answer_token_entropy → 1 forward pass (already done), logit-level distribution
+
+    H=0:       model assigns all mass to one option → very confident → SKIP zoom
+    H=log(4):  uniform over A/B/C/D              → maximally uncertain → ZOOM
+
+    score = -H  (higher = more confident = skip zoom, same convention everywhere)
+    Requires logprobs≥4 in SamplingParams to cover all four option tokens.
+    """
+    if not token_logprobs:
+        return {'answer_token_entropy_score': -float('inf'),
+                'H_answer_token': float('inf'), 'answer_probs': {}}
+
+    # Find the answer token position: locate <answer>X</answer> in text,
+    # count tokens up to the answer letter, index into token_logprobs.
+    m = re.search(r'<answer>\s*([A-F])', text)
+    if not m:
+        return {'answer_token_entropy_score': -float('inf'),
+                'H_answer_token': float('inf'), 'answer_probs': {}, 'found_answer': False}
+
+    # Token index of the answer letter character
+    char_pos    = m.start(1)
+    prefix_toks = len(tokenizer.encode(text[:char_pos], add_special_tokens=False))
+    tok_idx     = min(prefix_toks, len(token_logprobs) - 1)
+    lp_dict     = token_logprobs[tok_idx]
+
+    # Find token IDs for A-F (single-char tokens); options absent from top-K are skipped
+    option_lps = {}
+    for choice in 'ABCDEF':
+        ids = tokenizer.encode(choice, add_special_tokens=False)
+        if len(ids) == 1:
+            tid = ids[0]
+            if tid in lp_dict:
+                option_lps[choice] = lp_dict[tid].logprob
+
+    if len(option_lps) < 2:
+        # Fallback: not enough option tokens in top-K — use chosen token as 100% mass
+        return {'answer_token_entropy_score': 0.0, 'H_answer_token': 0.0,
+                'answer_probs': {m.group(1): 1.0}, 'found_answer': True,
+                'n_options_found': len(option_lps)}
+
+    # Normalise to a probability distribution over found options
+    import math
+    max_lp  = max(option_lps.values())
+    probs   = {c: math.exp(lp - max_lp) for c, lp in option_lps.items()}
+    total   = sum(probs.values())
+    probs   = {c: p / total for c, p in probs.items()}
+    H       = -sum(p * math.log(p + 1e-12) for p in probs.values() if p > 0)
+
+    return {
+        'answer_token_entropy_score': -H,   # higher → confident → skip zoom
+        'H_answer_token':              H,
+        'answer_probs':                probs,
+        'chosen_answer':               m.group(1),
+        'found_answer':                True,
+        'n_options_found':             len(option_lps),
+        'tok_idx':                     tok_idx,
+    }
+
+
+def compute_ppl_score(text: str, token_logprobs: list, tokenizer) -> dict:
+    """
+    Compute think-chain perplexity from vLLM logprobs (top-20), R1 greedy pass.
+
+    PPL = exp(mean NLL of the actually-generated tokens)  — standard LM
+    perplexity, as opposed to compute_entropy_score's distribution entropy
+    (which measures how spread the *next-token* distribution is, not how
+    likely the chosen token itself was).
+
+    Higher PPL → model is "surprised" by its own tokens → EXECUTE zoom
+    Lower  PPL → model generates fluently/confidently    → SKIP zoom
+
+    Score returned = -mean_nll = mean logprob  (log-domain, monotonic with
+    -PPL but numerically stable and matches the pre-existing --ppl_threshold
+    convention, default -1.8, which is calibrated on a mean-logprob scale).
+    """
+    if not token_logprobs:
+        return {'ppl_score': -float('inf'), 'ppl': float('inf'), 'mean_nll': float('inf'),
+                'n_think_tokens': 0, 'segments': []}
+
+    think_text, s, e = _think_token_range(text, token_logprobs, tokenizer)
+    think_lp_dicts   = token_logprobs[s:e] or token_logprobs
+
+    nlls     = [_token_nll(d) for d in think_lp_dicts]
+    mean_nll = float(np.mean(nlls))
+    ppl      = float(np.exp(mean_nll))
+
+    # Per-segment breakdown
+    segs = _segment(think_text)
+    seg_results, offset = [], 0
+    for seg in segs:
+        n = len(tokenizer.encode(seg, add_special_tokens=False))
+        seg_nlls = nlls[offset : offset + n]
+        if seg_nlls:
+            seg_results.append({
+                'text':     seg[:60],
+                'mean_nll': float(np.mean(seg_nlls)),
+                'ppl':      float(np.exp(np.mean(seg_nlls))),
+                'n_tokens': n,
+            })
+        offset += n
+
+    T = len(nlls)
+    q = max(T // 4, 1)
+    nll_first = float(np.mean(nlls[:q]))
+    nll_last  = float(np.mean(nlls[-q:]))
+    nll_trend = nll_last - nll_first   # positive = getting less confident
+    nll_max   = float(np.max(nlls))
+    nll_std   = float(np.std(nlls))
+
+    return {
+        'ppl_score':       -mean_nll,      # = mean logprob; higher → confident → skip zoom
+        'ppl':              ppl,
+        'mean_nll':         mean_nll,
+        'mean_entropy':      mean_nll,     # alias so --iter_entropy trend tracking still works
+        'nll_first':         nll_first,
+        'nll_last':          nll_last,
+        'nll_trend':         nll_trend,    # >0 = increasingly surprised
+        'nll_max':           nll_max,
+        'nll_std':           nll_std,
+        'n_think_tokens':    T,
+        'n_total_tokens':    len(token_logprobs),
+        'think_text':        think_text,
+        'token_nlls':        nlls,
+        'segments':          seg_results,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Answer distribution entropy  (NeurIPS Direction: answer-level uncertainty)
 # Directly measures "will the model give different answers?" instead of proxy
@@ -809,11 +958,14 @@ def parse_args():
         "--score_mode", choices=["keyword", "ppl", "entropy", "entropy_hmm",
                                   "sent_entropy", "early_entropy", "question_prior",
                                   "combined",
-                                  "answer_entropy", "answer_entropy_hmm"],
+                                  "answer_entropy", "answer_entropy_hmm",
+                                  "answer_token_entropy"],
         default="keyword",
         help=(
             "keyword:            composite keyword-based HMM score (original). "
-            "ppl:                mean logprob of think chain tokens (deprecated). "
+            "ppl:                think-chain perplexity from top-20 logprobs of the actually "
+            "                    generated tokens; score = mean logprob (log-domain, monotonic "
+            "                    with -PPL). "
             "entropy:            mean token entropy from top-20 logprobs. "
             "entropy_hmm:        GaussianHMM(K=2) on token entropy trajectory. "
             "sent_entropy:       sentence-level entropy last_H+trend composite. "
@@ -824,6 +976,10 @@ def parse_args():
             "                    No logprobs, no keywords. Direct answer uncertainty. "
             "answer_entropy_hmm: same + batch GMM (Baum-Welch) for data-adaptive belief state; "
             "                    score = P(Confident | H). No pre-calibrated threshold. "
+            "answer_token_entropy: single-pass proxy for answer_entropy — at the answer token "
+            "                    position in the greedy R1 output, read top-20 logprobs to get "
+            "                    p(A)/p(B)/p(C)/p(D) directly; score=-H(A,B,C,D). "
+            "                    ~5x faster than answer_entropy (no k-sample overhead). "
             "score > threshold → skip zoom in all modes."
         ),
     )
@@ -834,7 +990,10 @@ def parse_args():
     )
     p.add_argument(
         "--ppl_threshold", type=float, default=-1.8,
-        help="Threshold for ppl score mode (deprecated).",
+        help=(
+            "Threshold for ppl score mode (= mean logprob of think-chain tokens, "
+            "i.e. -mean_nll). score > threshold → skip zoom."
+        ),
     )
     p.add_argument(
         "--entropy_threshold", type=float, default=-2.5,
@@ -936,6 +1095,33 @@ def parse_args():
         ),
     )
 
+    p.add_argument(
+        "--iter_ate", action="store_true", default=False,
+        help=(
+            "Iterative Answer Token Entropy stopping for R2+ rounds. "
+            "After each zoom round, run 1 greedy NOTOOL pass (logprobs=20) and read "
+            "p(A/B/C/D) at the answer token position → H_answer_token. "
+            "If H < |entropy_threshold| → model confident → stop zooming. "
+            "If H >= H_prev (zoom not reducing uncertainty) → stop zooming. "
+            "~5x cheaper per round than --iter_ae (1 pass vs k=5 passes). "
+            "Works alongside any --score_mode (especially answer_token_entropy for "
+            "consistent gating at R1 and all R2+ rounds)."
+        ),
+    )
+
+    p.add_argument(
+        "--notool_gate", action="store_true", default=False,
+        help=(
+            "NOTOOL-first gate: run a clean NOTOOL pass for ALL samples BEFORE R1. "
+            "Confident samples (score > entropy_threshold) are answered with 1 pass. "
+            "Uncertain samples proceed to TOOL_SYS R1 → zoom execution → R2+. "
+            "After each R2+ zoom call, re-check confidence via iter_ate (ATE pass). "
+            "More efficient than answer_token_entropy: confident samples need 1 pass, "
+            "not 2 (no wasted R1 + ATE for high-confidence samples). "
+            "Logically cleaner: 'can you answer without zoom?' first, then zoom if not."
+        ),
+    )
+
     # Recursive Answer Entropy iter control (R2+ stopping)
     p.add_argument(
         "--recursive_ae", action="store_true", default=False,
@@ -1020,6 +1206,12 @@ def main():
         threshold = args.entropy_threshold
         print(f"[score] entropy mode — mean token entropy (top-20 logprobs), threshold={threshold}")
         print(f"[score] entropy_score = -mean_entropy  (higher = more confident = skip zoom)")
+    elif args.score_mode == "answer_token_entropy":
+        weights   = None
+        threshold = args.entropy_threshold   # same -H convention as answer_entropy
+        print(f"[score] answer_token_entropy mode — single-pass proxy for answer_entropy")
+        print(f"[score] reads p(A/B/C/D) from top-20 logprobs at answer token position, score=-H")
+        print(f"[score] threshold={threshold}  (~5x faster than answer_entropy, no k-sample overhead)")
     elif args.score_mode == "answer_entropy":
         weights   = None
         threshold = args.entropy_threshold   # use -H threshold (default -0.3 in script)
@@ -1040,7 +1232,9 @@ def main():
     else:
         weights   = None
         threshold = args.ppl_threshold
-        print(f"[score] ppl mode — mean think-chain logprob, threshold={threshold}")
+        print(f"[score] ppl mode — think-chain perplexity (top-1 logprob of generated tokens), "
+              f"threshold={threshold}")
+        print(f"[score] ppl_score = -mean_nll = mean logprob  (higher = more confident = skip zoom)")
 
     print(f"[score] score > {threshold} → skip zoom, score ≤ {threshold} → execute zoom")
 
@@ -1077,7 +1271,8 @@ def main():
         include_stop_str_in_output=True,
         detokenize=True,
         logprobs=(20 if args.score_mode in ("entropy", "entropy_hmm", "sent_entropy",
-                                             "early_entropy", "combined")
+                                             "early_entropy", "combined",
+                                             "answer_token_entropy")
                   else (1 if args.score_mode == "ppl" else None)),
     )
     # Used for zoom_skipped fallback: force model to answer without zoom
@@ -1108,6 +1303,16 @@ def main():
         detokenize=True,
         logprobs=None,   # no logprobs needed — direct answer extraction
     ) if args.score_mode in ("answer_entropy", "answer_entropy_hmm") else None
+
+    # answer_token_entropy / notool_gate / iter_ate: greedy NOTOOL pass with logprobs=20
+    ate_sp = SamplingParams(
+        n=1, temperature=0.0,
+        max_tokens=args.max_tokens,
+        stop=["</video_zoom>", "</answer>"],
+        include_stop_str_in_output=True,
+        detokenize=True,
+        logprobs=20,   # need top-20 to cover A/B/C/D at the answer token position
+    ) if (args.score_mode == "answer_token_entropy" or args.iter_ate or args.notool_gate) else None
 
     # answer_wald: k temperature samples per R2+ round for Wald stopping test
     wald_iter_sp = SamplingParams(
@@ -1216,9 +1421,13 @@ def main():
                         args.frames_upbound)
                     prompt = build_tool_initial_prompt(question, frame_times, processor)
                     state  = SampleState(pid, gt, video_path, prompt, list(frames), question=question)
-                    if args.ae_notool and args.score_mode in ("answer_entropy", "answer_entropy_hmm"):
+                    if args.notool_gate or (args.ae_notool and args.score_mode in (
+                            "answer_entropy", "answer_entropy_hmm", "answer_token_entropy")):
+                        # use_tool_sys=True: keeps TOOL_SYS (training-aligned) and appends
+                        # "Do not call <video_zoom>" to the user turn so the model actually
+                        # generates <answer>X</answer> instead of always calling zoom.
                         state.notool_prompt = build_notool_prompt(question, frame_times, processor,
-                                                                  use_tool_sys=False)
+                                                                  use_tool_sys=True)
                     active.append(state)
                 except Exception as e:
                     print(f"\n[prep] skip {pid}: {e}")
@@ -1227,6 +1436,46 @@ def main():
                 continue
 
             done = []
+
+            # ══════════════════════════════════════════════════════════════
+            # Phase 0 (notool_gate): NOTOOL pass before R1 to pre-screen
+            # confident samples. Only uncertain samples proceed to R1.
+            # ══════════════════════════════════════════════════════════════
+            if args.notool_gate and active:
+                notool_inputs = [
+                    {"prompt": s.notool_prompt, "multi_modal_data": {"image": list(s.images)}}
+                    for s in active
+                ]
+                notool_outputs = llm.generate(notool_inputs, ate_sp)
+                uncertain_active = []
+                for s, out in zip(active, notool_outputs):
+                    fa_text = out.outputs[0].text
+                    fa_lps  = out.outputs[0].logprobs or []
+                    feats   = compute_answer_token_entropy(fa_text, fa_lps, processor.tokenizer)
+                    score   = feats["answer_token_entropy_score"]
+                    feats["H_answer"]          = feats.get("H_answer_token", float("inf"))
+                    feats["majority_answer"]   = feats.get("chosen_answer")
+                    feats["answer_entropy_score"] = score
+                    s.hmm_score    = score
+                    s.hmm_features = feats
+                    s.n_rounds     = 1
+
+                    if score > args.entropy_threshold:
+                        # Confident — answer directly, skip R1 + zoom entirely
+                        s.zoom_skipped = True
+                        majority = feats.get("chosen_answer")
+                        if majority:
+                            s.final_answer = majority
+                            s.acc_final    = score_answer(majority, s.gt)
+                            done.append(s)
+                        else:
+                            uncertain_active.append(s)   # no answer found, fall through to R1
+                    else:
+                        uncertain_active.append(s)
+
+                active = uncertain_active
+                if not active:
+                    continue   # whole batch done at Phase 0
 
             # ══════════════════════════════════════════════════════════════
             # Round 1: TOOL_SYS greedy — intercept zoom for HMM gate
@@ -1263,8 +1512,17 @@ def main():
                     # Model called zoom — apply score gate
                     think_text = extract_think_text(text)
 
+                    # notool_gate: already pre-screened by Phase 0 — go straight to zoom
+                    if args.notool_gate:
+                        end_pos = text.find("</video_zoom>") + len("</video_zoom>")
+                        s.prompt += text[:end_pos]
+                        s.zoom_triggered = True
+                        zoom_queue[idx] = (s, zoom_call)
+                        continue
+
                     # answer_entropy modes: defer to batch force-answer sampling below
-                    if args.score_mode in ("answer_entropy", "answer_entropy_hmm"):
+                    if args.score_mode in ("answer_entropy", "answer_entropy_hmm",
+                                           "answer_token_entropy"):
                         ae_deferred.append((idx, s, out, zoom_call))
                         continue   # skip inline scoring; handled in batch after this loop
 
@@ -1320,6 +1578,10 @@ def main():
                             tok_lps = out.outputs[0].logprobs or []
                             feats   = compute_ppl_score(text, tok_lps, processor.tokenizer)
                             score   = feats['ppl_score']
+                        elif args.score_mode == "answer_token_entropy":
+                            tok_lps = out.outputs[0].logprobs or []
+                            feats   = compute_answer_token_entropy(text, tok_lps, processor.tokenizer)
+                            score   = feats['answer_token_entropy_score']
                         else:
                             feats = compute_hmm_score(think_text, weights)
                             score = feats['hmm_score']
@@ -1368,11 +1630,8 @@ def main():
                 ae_fa_inputs = []
                 for (idx, s, out, zoom_call) in ae_deferred:
                     if args.ae_notool and s.notool_prompt is not None:
-                        # Clean NOTOOL_SYS prompt: model sees original frames+question only,
-                        # no zoom tool definition → all k chains produce valid answers
                         fa_prompt = s.notool_prompt
                     else:
-                        # Original: append R1 zoom call + "zoom unavailable" turn
                         text    = out.outputs[0].text
                         end_pos = text.find("</video_zoom>") + len("</video_zoom>")
                         fa_prompt = s.prompt + text[:end_pos] + _FORCE_ANS_TURN
@@ -1381,15 +1640,31 @@ def main():
                         "multi_modal_data": {"image": list(s.images)},
                     })
 
-                # k temperature samples per sample → answer distribution
-                ae_fa_outputs = llm.generate(ae_fa_inputs, answer_sp)
+                # answer_token_entropy: single greedy pass with logprobs=20 (no k-sampling)
+                if args.score_mode == "answer_token_entropy":
+                    ae_fa_outputs = llm.generate(ae_fa_inputs, ate_sp)
+                else:
+                    # answer_entropy / answer_entropy_hmm: k temperature samples
+                    ae_fa_outputs = llm.generate(ae_fa_inputs, answer_sp)
 
                 # Phase 1: H_answer for each sample
                 ae_batch_h    = []
                 ae_batch_feats = []
                 for fa_out in ae_fa_outputs:
-                    texts_k = [o.text for o in fa_out.outputs]
-                    feats   = compute_answer_dist_entropy(texts_k)
+                    if args.score_mode == "answer_token_entropy":
+                        # Single greedy pass: read p(A/B/C/D) from logprobs at answer token
+                        fa_text  = fa_out.outputs[0].text
+                        tok_lps  = fa_out.outputs[0].logprobs or []
+                        feats    = compute_answer_token_entropy(fa_text, tok_lps,
+                                                                processor.tokenizer)
+                        # Alias H_answer so downstream gmm/logging code still works
+                        feats['H_answer']            = feats.get('H_answer_token', float('inf'))
+                        feats['majority_answer']     = feats.get('chosen_answer')
+                        feats['answer_entropy_score'] = feats.get('answer_token_entropy_score',
+                                                                   -float('inf'))
+                    else:
+                        texts_k = [o.text for o in fa_out.outputs]
+                        feats   = compute_answer_dist_entropy(texts_k)
                     ae_batch_feats.append(feats)
                     ae_batch_h.append(feats['H_answer'])
 
@@ -1564,10 +1839,35 @@ def main():
                             if delta_H >= args.iter_threshold:
                                 iter_force_stop = True
 
+                    # ── iter_ate: 1 NOTOOL pass → H(A/B/C/D) stopping ──── #
+                    ate_force_stop    = False
+                    ate_majority_ans  = None
+                    if args.iter_ate and zoom_call is not None and not is_last:
+                        end_pos    = text.find("</video_zoom>") + len("</video_zoom>")
+                        fa_prompt  = s.prompt + text[:end_pos] + _FORCE_ANS_TURN
+                        ate_out    = llm.generate(
+                            [{"prompt": fa_prompt,
+                              "multi_modal_data": {"image": list(s.images)}}],
+                            ate_sp,
+                        )[0]
+                        fa_text    = ate_out.outputs[0].text
+                        fa_lps     = ate_out.outputs[0].logprobs or []
+                        ate_feats  = compute_answer_token_entropy(
+                            fa_text, fa_lps, processor.tokenizer)
+                        H_cur      = ate_feats.get('H_answer_token', float('inf'))
+                        # Stop if confident enough OR zoom not reducing uncertainty
+                        if (H_cur < abs(args.entropy_threshold)
+                                or (s.prev_h_answer is not None
+                                    and H_cur >= s.prev_h_answer)):
+                            ate_force_stop   = True
+                            ate_majority_ans = ate_feats.get('chosen_answer')
+                        s.prev_h_answer = H_cur
+
                     if (zoom_call is not None and not is_last
                             and not iter_force_stop
                             and not wald_force_stop
-                            and not rae_force_stop):
+                            and not rae_force_stop
+                            and not ate_force_stop):
                         end_pos  = text.find("</video_zoom>") + len("</video_zoom>")
                         s.prompt += text[:end_pos]
                         zoom_queue2[idx] = (s, zoom_call)
@@ -1576,6 +1876,8 @@ def main():
                             s.final_answer = rae_majority_ans
                         elif wald_force_stop and wald_majority_ans:
                             s.final_answer = wald_majority_ans
+                        elif ate_force_stop and ate_majority_ans:
+                            s.final_answer = ate_majority_ans
                         else:
                             s.final_answer = extract_mc_answer(text)
                         s.acc_final = score_answer(s.final_answer, s.gt) if s.final_answer else 0.0

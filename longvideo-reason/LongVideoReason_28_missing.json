@@ -1,0 +1,394 @@
+[
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/265_1.webm"
+    ],
+    "problem": "<image>In the video, two prominent shop signs appear together in the same frame at 230.0s. Which establishments do these signs belong to?\nA. \"Century-old store\" and \"DuckTravel\"  \nB. \"Crunchy Fragrance Garden\" and \"Xichou Broken Crust Pastry\"  \nC. \"Grilled rice cake\" and \"Ice milk\"  \nD. \"Free Blood Pressure Test\" and \"Handmade\"  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 873,
+      "video_url": "https://www.youtube.com/watch?v=265_1.webm"
+    },
+    "problem_id": "lvr_265_1_0873"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/393_3.webm"
+    ],
+    "problem": "<image>At multiple points in the video, shops with Chinese character signs are visible. Based on their spatial arrangement and continuity of details, which shop would be positioned closest to the alleyway entrance near the end of the sequence where a stone lion statue appears? \nA. A clothing store with mannequins in traditional pink/white outfits  \nB. A tofu shop marked with \"\u8c46\u8150\"  \nC. A tea house with signs reading \"\u8336\u9986\"  \nD. A shoe store with a \"Shoes\" sign in Chinese  \n",
+    "solution": "C",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 882,
+      "video_url": "https://www.youtube.com/watch?v=393_3.webm"
+    },
+    "problem_id": "lvr_393_3_0882"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/200_6.webm"
+    ],
+    "problem": "<image>A motorcycle is observed parked in two different locations. Initially seen near stairs with metal railings, it later appears next to a building with a prominent festive decoration. What is this decoration?\nA. A red carpet laid for an event  \nB. A large pink balloon arch  \nC. A green bus stop sign  \nD. A row of white planters with red flowers  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 883,
+      "video_url": "https://www.youtube.com/watch?v=200_6.webm"
+    },
+    "problem_id": "lvr_200_6_0883"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/326_3.webm"
+    ],
+    "problem": "<image>After being observed pointing towards a distant location while in front of a pink umbrella, which landmark did the individual with the elephant-design backpack subsequently pass through?\nA. Traditional stone archway  \nB. Intelligent First-aid station  \nC. Three Lives and Three Worlds shop entrance  \nD. Pavilion with red and gold roof  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 886,
+      "video_url": "https://www.youtube.com/watch?v=326_3.webm"
+    },
+    "problem_id": "lvr_326_3_0886"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/215_5.webm"
+    ],
+    "problem": "<image>Starting from the stone altar with the lotus-carved stone and ceramic cup, which sequence of structures would someone pass through to reach the cemetery with gravestones under trees, based on the spatial progression observed?\nA. Altar \u2192 wooden pavilion \u2192 stone lantern \u2192 cemetery  \nB. Altar \u2192 stone staircase with metal railing \u2192 stone lantern \u2192 cemetery  \nC. Altar \u2192 stone wall with alcove \u2192 blue bench \u2192 cemetery  \nD. Altar \u2192 torii gate \u2192 stone cross \u2192 cemetery  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 890,
+      "video_url": "https://www.youtube.com/watch?v=215_5.webm"
+    },
+    "problem_id": "lvr_215_5_0890"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/224_37.webm"
+    ],
+    "problem": "<image>After photographing the main temple gate, which location did the photographer visit next based on their movement trajectory?\nA. The red wooden bridge with people  \nB. The stone turtle statue near a pond  \nC. The pavilion with a thatched roof  \nD. The gravel path with the \"Only Shared on Youtube.com\" text  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 896,
+      "video_url": "https://www.youtube.com/watch?v=224_37.webm"
+    },
+    "problem_id": "lvr_224_37_0896"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/304_1.webm"
+    ],
+    "problem": "<image>A person wearing a white shirt and blue shorts is first observed walking toward the camera on the left side of the street (0.0s). Later, at 25.0s, they are seen walking toward the left near a building with a clock. What best describes their movement relative to the central flower pot initially visible at 0.0s? \nA. Passed the flower pot on their right side while moving toward the camera, then turned left\nB. Circled counter-clockwise around the flower pot to avoid it\nC. Remained on the left side of the street and never approached the flower pot\nD. Crossed to the right side of the street first, then looped back left\n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 901,
+      "video_url": "https://www.youtube.com/watch?v=304_1.webm"
+    },
+    "problem_id": "lvr_304_1_0901"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/413_5.webm"
+    ],
+    "problem": "<image>Based on the progression of scenes in the video, which location becomes the focal point in the final segments due to recurring architectural and environmental clues?\nA. A dense urban residential area with red-tiled roofs and white walls  \nB. A coastal area with traditional buildings, boats, and a pier  \nC. A commercial district with skyscrapers and modern glass facades  \nD. A park with stone pathways and decorative railings  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 904,
+      "video_url": "https://www.youtube.com/watch?v=413_5.webm"
+    },
+    "problem_id": "lvr_413_5_0904"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/207_5.webm"
+    ],
+    "problem": "<image>Based on the movement patterns of the person in the red shirt and the spatial layout of structures described, what hazard does the Chinese caution sign \"Watch Your Step\" (observed at 260.0s and 265.0s) most likely warn against?\nA. Uneven pavement near the white cylindrical columns  \nB. Steep steps descending toward the water's edge  \nC. Slippery surfaces on the glass-roofed bridge  \nD. Low visibility due to dense tree foliage  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 906,
+      "video_url": "https://www.youtube.com/watch?v=207_5.webm"
+    },
+    "problem_id": "lvr_207_5_0906"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/268_1.webm"
+    ],
+    "problem": "<image>At 0.0s, a white car with a blue license plate is parked on the right side of the street, and a gray car is parked on the left. At 10.0s, another white car with a blue license plate is observed. Which statement best explains the spatial relationship between these vehicles? \nA. The same white car moved from the right to the left side by 10.0s.  \nB. Two distinct white cars were parked on opposite sides of the street at different times.  \nC. The gray car was repainted white and remained on the left side.  \nD. The white car at 10.0s replaced the gray car initially parked on the left.  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 917,
+      "video_url": "https://www.youtube.com/watch?v=268_1.webm"
+    },
+    "problem_id": "lvr_268_1_0917"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/325_3.webm"
+    ],
+    "problem": "<image>Based on spatial and temporal progression, which activity first emerges as a coordinated group movement on the frozen lake after the initial individual walks?\nB. Multiple riders using colorful bicycles with skis/sled attachments  \nA. People forming a line to take photos near the pavilion  \nC. A synchronized ice-skating performance  \nD. Teams dragging sleds loaded with equipment  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 928,
+      "video_url": "https://www.youtube.com/watch?v=325_3.webm"
+    },
+    "problem_id": "lvr_325_3_0928"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/333_3.webm"
+    ],
+    "problem": "<image>At 5.0s, a red motorcycle is parked on a wooden deck. At which subsequent time is the same motorcycle observed parked on the street with a pink and white polka-dotted cloth draped over its seat?\nA. 10.0s  \nB. 25.0s  \nC. 30.0s  \nD. 15.0s  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 932,
+      "video_url": "https://www.youtube.com/watch?v=333_3.webm"
+    },
+    "problem_id": "lvr_333_3_0932"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/305_7.webm"
+    ],
+    "problem": "<image>The video begins with a person standing on a wet stone pathway near a sign displaying prohibition symbols. Based on environmental continuity and spatial progression, which location does this individual ultimately arrive at by the end of the video?\nA. A bustling indoor bar with neon \"Diamonds Bar\" signage  \nB. A traditional Japanese shrine with red lanterns and torii gates  \nC. A daytime construction site with orange traffic cones  \nD. A modern commercial building with \"ARMANI\" signage  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 936,
+      "video_url": "https://www.youtube.com/watch?v=305_7.webm"
+    },
+    "problem_id": "lvr_305_7_0936"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/67_5.webm"
+    ],
+    "problem": "<image>Based on the spatial arrangement and visible signage across different timestamps, which market is the motorcycle with license plate \"3389 A2\" ultimately parked near?\nA. Taichung 2nd Market  \nB. Fuchung 2nd Market  \nC. Jubao Market  \nD. Shilin Market  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 937,
+      "video_url": "https://www.youtube.com/watch?v=67_5.webm"
+    },
+    "problem_id": "lvr_67_5_0937"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/80_24.webm"
+    ],
+    "problem": "<image>Based on the traffic cones' positions and their described contexts between 60.0s and 95.0s, which spatial progression pattern do they follow?\nA. From a narrow corridor to clustered around a motorcycle  \nB. From a restricted construction zone to marking a pedestrian walkway  \nC. From a corridor to progressively lining sidewalks toward a crosswalk  \nD. From a dimly lit alley to encircling a building facade  \n",
+    "solution": "C",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 940,
+      "video_url": "https://www.youtube.com/watch?v=80_24.webm"
+    },
+    "problem_id": "lvr_80_24_0940"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/287_21.webm"
+    ],
+    "problem": "<image>At different points in the video, two distinct warning signs appear on lifebuoys. Based on their spatial relationships to landmarks, which sign is positioned closest to the bridge?\nA. \"\u6f6e\u6c50\u53d8\u5316 \u8bf7\u52ff\u6e38\u6cf3\" (Tide changes, please do not swim)  \nB. \"\u6f6e\u6c50\u53d8\u5316 \u8bf7\u52ff\u9017\u7559\" (Tide changes, please do not linger)  \nC. Both signs are equally close to the bridge  \nD. Neither sign is near the bridge  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 941,
+      "video_url": "https://www.youtube.com/watch?v=287_21.webm"
+    },
+    "problem_id": "lvr_287_21_0941"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/400_27.webm"
+    ],
+    "problem": "<image>A boat with a blue canopy is observed navigating through different scenes. Based on its spatial progression and interactions with structures, which location does it ultimately reach after passing under multiple bridges?\nA. A jewelry store with a glass display case  \nB. A stone bridge adorned with yellow lights  \nC. A bustling street lined with red lanterns  \nD. A dock marked by a sign reading \"\u7801\u5934\" (wharf)  \n",
+    "solution": "D",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 942,
+      "video_url": "https://www.youtube.com/watch?v=400_27.webm"
+    },
+    "problem_id": "lvr_400_27_0942"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/309_9.webm"
+    ],
+    "problem": "<image>Based on changes observed in the video, which direction did the blue truck move relative to the wooden fence?\nA. From left to right of the fence  \nB. From right to left of the fence  \nC. Remained stationary behind the fence  \nD. Moved away from the fence into a shed  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 945,
+      "video_url": "https://www.youtube.com/watch?v=309_9.webm"
+    },
+    "problem_id": "lvr_309_9_0945"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/170_7.webm"
+    ],
+    "problem": "<image>Based on the spatial arrangement and temporal changes in traffic/pedestrian signals, what is the correct sequence of traffic light states observed at the same intersection?\nA. Red vehicle light \u2192 Yellow vehicle light \u2192 Green pedestrian signal \u2192 Red pedestrian signal  \nB. Green pedestrian signal \u2192 Red vehicle light \u2192 Yellow vehicle light \u2192 Green vehicle light  \nC. Red vehicle light + Green pedestrian signal \u2192 Green vehicle light \u2192 Yellow vehicle light \u2192 Red vehicle light  \nD. Green vehicle light \u2192 Yellow vehicle light \u2192 Red vehicle light + Green pedestrian signal \u2192 Red pedestrian signal  \n",
+    "solution": "C",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 952,
+      "video_url": "https://www.youtube.com/watch?v=170_7.webm"
+    },
+    "problem_id": "lvr_170_7_0952"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/75_18.webm"
+    ],
+    "problem": "<image>Based on the evolving spatial arrangement of lanterns and structural elements, what is the most likely direction of movement through the environment?\nA. From a dense forest floor into an urban plaza  \nB. From a shrine entrance along a lantern-lined path into deeper forest  \nC. From a rocky hillside back to a wooden torii gate  \nD. From a gravel path to a concrete dock area  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 956,
+      "video_url": "https://www.youtube.com/watch?v=75_18.webm"
+    },
+    "problem_id": "lvr_75_18_0956"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/279_9.webm"
+    ],
+    "problem": "<image>When approaching the main temple structure, which sequence of spatial elements is encountered based on their appearance in the video?\nA. Stone steps \u2192 Left-side komainu statue \u2192 Pathway lanterns on both sides  \nB. Rocky terrain \u2192 Metal railings \u2192 Golden roof decorations  \nC. Gravel path \u2192 Wooden posts \u2192 Stone wall with moss  \nD. Rope barrier \u2192 Stone lanterns \u2192 Ornate red pillars  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 960,
+      "video_url": "https://www.youtube.com/watch?v=279_9.webm"
+    },
+    "problem_id": "lvr_279_9_0960"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/371_7.webm"
+    ],
+    "problem": "<image>At 30 seconds, a building's sign reads \"Duck\" in white text on a blue background. At 35 seconds, the same sign now reads \"Duck Travel\" in green with white text. What does this change most likely indicate about the camera\u2019s movement? \nA. The camera is moving away from the sign.\nB. The camera is panning to the left, revealing more of the sign.\nC. The camera is moving closer to the sign.\nD. The camera remains stationary, but the sign\u2019s lighting changes.\n",
+    "solution": "C",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 968,
+      "video_url": "https://www.youtube.com/watch?v=371_7.webm"
+    },
+    "problem_id": "lvr_371_7_0968"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/370_2.webm"
+    ],
+    "problem": "<image>A woman in a black dress carrying a red handbag is observed walking on a sidewalk at 10.0 seconds. By 95.0 seconds, she is seen standing near a yellow taxi on the street. What most likely enabled her to safely cross the road to reach the taxi?\nA. A green pedestrian traffic light visible at 15.0 seconds  \nB. A blue directional sign at a bus stop near the taxi  \nC. The taxi pulling over to the sidewalk where she was standing  \nD. A red traffic light for vehicles turning green at 5.0 seconds  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 970,
+      "video_url": "https://www.youtube.com/watch?v=370_2.webm"
+    },
+    "problem_id": "lvr_370_2_0970"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/227_4.webm"
+    ],
+    "problem": "<image>A surveillance camera is first observed at 5.0s mounted near a signboard. Based on spatial relationships and recurring elements, which vehicle is most likely consistently monitored by this camera across multiple frames?\nA. White Nissan pickup truck (license D9255) parked on the right side at 45.0s  \nB. Van parked on the right side of the street with a bicycle nearby at 5.0s  \nC. Red car with a white/blue scooter parked next to it at 40.0s  \nD. Blue sedan with a green license plate moving on the street at 225.0s  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 981,
+      "video_url": "https://www.youtube.com/watch?v=227_4.webm"
+    },
+    "problem_id": "lvr_227_4_0981"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/500_6.webm"
+    ],
+    "problem": "<image>What is the primary activity of the individual wearing the orange vest with reflective stripes throughout the video?\nA. Delivering packages  \nB. Directing traffic  \nC. Clearing snow and maintaining the area  \nD. Selling souvenirs  \n",
+    "solution": "C",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 983,
+      "video_url": "https://www.youtube.com/watch?v=500_6.webm"
+    },
+    "problem_id": "lvr_500_6_0983"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/243_3.webm"
+    ],
+    "problem": "<image>At 50.0s, white balloons with yellow smiley faces are clustered in the foreground. How does the presence and ownership of these balloons evolve by 150.0s?\nA. The balloons remain clustered but shift to the background near a \"DuckTravel\" sign.  \nB. The balloons are replaced by colorful ones, carried by a child in a pink vest.  \nC. The balloons are scattered, with some held by the man in the yellow vest.  \nD. The balloons are deflated and left near a fruit stand.  \n",
+    "solution": "B",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 984,
+      "video_url": "https://www.youtube.com/watch?v=243_3.webm"
+    },
+    "problem_id": "lvr_243_3_0984"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/52_5.webm"
+    ],
+    "problem": "<image>A person wearing a yellow cap and green scarf is observed moving through the store. Based on spatial and temporal clues, which sequence of sections did they most likely pass through?\nA. Scarves \u2192 Hats \u2192 Jackets \u2192 Exit signage  \nB. Hats \u2192 Fabrics \u2192 CCTV area \u2192 Belts  \nC. Bags \u2192 Socks \u2192 Sunglasses \u2192 Christmas decor  \nD. Gloves \u2192 Ties \u2192 Fabrics \u2192 Inflatable displays  \n",
+    "solution": "A",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 988,
+      "video_url": "https://www.youtube.com/watch?v=52_5.webm"
+    },
+    "problem_id": "lvr_52_5_0988"
+  },
+  {
+    "videos": [
+      "General_Video/longvideo-reason/longvila_videos/71_0.webm"
+    ],
+    "problem": "<image>Based on the progression of locations shown through architectural elements and signage, which sequence best represents the path taken by the group in the video? \nA. Map overview \u2192 Stone lion statues \u2192 \"\u6e05\u6c34\u5bfa\" sign \u2192 Red torii gate  \nB. Map overview \u2192 \"\u6e05\u6c34\u5bfa\" sign \u2192 Red torii gate \u2192 Stone lion statues  \nC. Map overview \u2192 \"\u6e05\u6c34\u5bfa\" sign \u2192 Stone lion statues \u2192 Red torii gate  \nD. Map overview \u2192 Red torii gate \u2192 \"\u6e05\u6c34\u5bfa\" sign \u2192 Stone lion statues  \n",
+    "solution": "C",
+    "data_source": "longvideo-reason",
+    "extra_info": {
+      "answer_type": "multiple_choice",
+      "problem_id": 994,
+      "video_url": "https://www.youtube.com/watch?v=71_0.webm"
+    },
+    "problem_id": "lvr_71_0_0994"
+  }
+]

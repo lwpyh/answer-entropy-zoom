@@ -121,17 +121,26 @@ class FSDPVLLMShardingManager(BaseShardingManager):
             log_gpu_memory_usage("After sync model weights in sharding manager", logger=logger)
             del params
         else:
+            # Move params to CPU and free all GPU memory before wake_up.
+            # Peak GPU during wake_up = vLLM weights only (~39 GiB), no FSDP or
+            # state_dict copy overhead.  params_cpu is a CPU dict; update_params
+            # moves tensors to device lazily (one at a time via generator).
+            params_cpu = {k: v.detach().cpu() for k, v in params.items()}
+            del params
+            if self.offload_param:
+                offload_fsdp_model_to_cpu(self.module)
+            torch.cuda.empty_cache()
+
             if "tags" in inspect.signature(self.inference_engine.wake_up).parameters:
                 self.inference_engine.wake_up(tags=["weights"])
             else:
                 self.inference_engine.wake_up()
 
-            # update model params
-            self.update_params(params)
+            # update model params from CPU tensors (generator moves one at a time)
+            device = torch.cuda.current_device()
+            self.update_params({k: v.to(device) for k, v in params_cpu.items()})
             log_gpu_memory_usage("After sync model weights in sharding manager", logger=logger)
-            del params
-            if self.offload_param:
-                offload_fsdp_model_to_cpu(self.module)
+            del params_cpu
             torch.cuda.empty_cache()
 
             if "tags" in inspect.signature(self.inference_engine.wake_up).parameters:

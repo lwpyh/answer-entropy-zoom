@@ -28,7 +28,8 @@ def main(config):
 def run_ppo(config, compute_score=None):
     if not ray.is_initialized():
         # this is for local ray cluster
-        ray.init(runtime_env={'env_vars': {'TOKENIZERS_PARALLELISM': 'true', 'NCCL_DEBUG': 'WARN'}})
+        ray.init(runtime_env={'env_vars': {'TOKENIZERS_PARALLELISM': 'true', 'NCCL_DEBUG': 'WARN'}},
+                 object_store_memory=20 * 1024**3)  # cap at 20 GB; default is 30% of system RAM which can exceed Slurm cgroup limit
 
     ray.get(main_task.remote(config, compute_score))
 

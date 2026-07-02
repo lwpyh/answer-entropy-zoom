@@ -38,7 +38,10 @@ def _default_compute_score(data_source, solution_str, ground_truth, extra_info=N
         # res = openr1.compute_score(solution_str, ground_truth)
         raise NotImplementedError
     elif data_source in ['nextqa', 'LLaVA-Video-178K', 'MVLU', 'youtube', 'lvb', 'mvbench', 'VideoMME', 'tempcompass', 'mmvu', 'lvbench', 'longvideo-reason','MVLU_test', 'glimpse', 'LSDBench', 'CLEVRER_validation']:
-        if extra_info['answer_type'] == 'multiple_choice':
+        if 'answer_type' not in extra_info:
+            from . import openr1
+            res = openr1.compute_score(kwargs['prompt'], solution_str, ground_truth, extra_info)
+        elif extra_info['answer_type'] == 'multiple_choice':
             if extra_info['judge_mc_by_gpt']:
                 from . import general_qa
                 res = general_qa.compute_score(kwargs['prompt'], solution_str, ground_truth, extra_info)
@@ -56,9 +59,9 @@ def _default_compute_score(data_source, solution_str, ground_truth, extra_info=N
         from . import video_mmlu
         res = video_mmlu.compute_score(kwargs['prompt'], solution_str, ground_truth, extra_info)
     else:
-        print(f'data_source {data_source} unregistered, use gpt judge')
-        from . import general_qa
-        res = general_qa.compute_score(kwargs['prompt'], solution_str, ground_truth, extra_info)
+        print(f'data_source {data_source} unregistered, use openr1 judge')
+        from . import openr1
+        res = openr1.compute_score(kwargs['prompt'], solution_str, ground_truth, extra_info)
         # raise NotImplementedError
 
     # if isinstance(res, (int, float, bool)):
