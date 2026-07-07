@@ -1,31 +1,27 @@
 # Answer Entropy Gate for Selective Video Zoom
 
-**Answer-distribution entropy gating for efficient tool use in long video QA.**
+**Answer Token Entropy (ATE) gating for efficient tool use in long video QA.**
 
-Instead of always invoking a temporal zoom tool, we ask: *do k independent reasoning chains already agree on the answer?* If yes, skip the zoom. If not, execute it.
+Uses the entropy of the model's answer token distribution to decide whether to invoke a video zoom/frame-inspect tool. If the model is already confident, skip the tool; if uncertain, trigger it.
 
-Built on top of [VideoZoomer](https://arxiv.org/abs/2512.22315).
+Built on top of [VideoZoomer](https://arxiv.org/abs/2512.22315) and [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval).
 
 ---
 
 ## Method
 
-Before invoking a zoom tool, draw *k* temperature samples from the model and measure how much the extracted MC answers (A/B/C/D) agree:
-
 ```
-R1  →  sample k responses at temperature T
-     →  extract answer letter from each sample
-     →  H_answer = -Σ p_i · log(p_i)  over {A,B,C,D}
-     →  score = -H_answer
-
-score > threshold  →  confident  →  SKIP zoom, use majority-vote answer
-score ≤ threshold  →  uncertain  →  EXECUTE zoom  →  R2 with dense frames
+R1 (no-tool greedy decode)
+  → compute H over answer token logits
+  → -H > threshold  →  confident  →  return answer
+  → -H ≤ threshold  →  uncertain  →  invoke zoom/frame-inspect  →  R2
 ```
 
-- **H = 0** — all k samples agree → skip zoom
-- **H = log(4)** — uniform distribution → execute zoom
-- Threshold `−0.30` skips ~10–20% of samples (those where ≥4/5 chains agree)
-- No logprobs, no keyword lists, no calibrated constants — only one free parameter (threshold)
+Three variants are implemented:
+
+- **ATE single-tool** — one zoom tool, one extra round if uncertain
+- **ATE multi-tool** — model chooses between `video_zoom` and `frame_inspect`; re-gates after each tool call (up to 5 rounds)
+- **Open-loop multi-tool** — no gate; model freely calls tools until it outputs a final answer
 
 ---
 
@@ -34,88 +30,96 @@ score ≤ threshold  →  uncertain  →  EXECUTE zoom  →  R2 with dense frame
 ```bash
 git clone https://github.com/lwpyh/answer-entropy-zoom
 cd answer-entropy-zoom
-conda create -n answer-entropy-zoom python=3.11 -y
-conda activate answer-entropy-zoom
+conda create -n VideoZoomer python=3.11 -y
+conda activate VideoZoomer
 pip install -r requirements.txt
 pip install -e .
-pip install httpx==0.23.3
+```
+
+Set your tokens before running:
+```bash
+export HF_TOKEN="your_huggingface_token"
+export OPENAI_API_KEY="your_openai_key"   # only needed for GPT-based reward scoring
+export HF_HOME="/path/to/hf_cache"
 ```
 
 ---
 
 ## Data Preparation
 
-### LongVideoReason-eval (1k test samples)
+Download benchmark data and videos:
 
-1. Download the dataset and videos from HuggingFace:
-   ```bash
-   huggingface-cli download LongVideo-Reason/longvideo-reason --repo-type dataset --local-dir longvideo-reason/data
-   huggingface-cli download LongVideo-Reason/longvideo_eval_videos --repo-type dataset --local-dir longvideo-reason/videos
-   ```
+```bash
+# LongVideoReason
+huggingface-cli download LongVideo-Reason/longvideo-reason \
+    --repo-type dataset --local-dir longvideo-reason/data
 
-2. Edit `longvideo-reason/eval_longvideoreason.yaml` — update the `json_path` field to point to your local `LongVideoReason_test_fixed.json`.
+# MLVU / LVB / LVBench / VideoMME — follow each benchmark's official instructions
+```
 
-### VideoMME
-
-Download videos and annotations from the [VideoMME](https://video-mme.github.io) official site.
+Edit the relevant YAML in `longvideo-reason/` to set `json_path` and `video_path` to your local paths.
 
 ---
 
-## Usage
+## Running Experiments
+
+All scripts are in `scripts/`. Edit the `MODEL_PATH` and data paths at the top of each script before submitting.
+
+### ATE single-tool zoom (per benchmark)
 
 ```bash
-python main_infer_hmm_zoom.py \
-    --data_path           longvideo-reason/eval_longvideoreason.yaml \
-    --model_path          <path-to-videozoomer-checkpoint> \
-    --video_root          /path/to/videos \
-    --output_dir          ./results/answer_entropy \
-    --score_mode          answer_entropy \
-    --entropy_threshold   -0.30 \
-    --answer_k            5 \
-    --answer_temperature  0.7 \
-    --fps                 0.5 \
-    --frames_upbound      64 \
-    --max_rounds          5 \
-    --batch_size          32
+sbatch scripts/eval_mlvu_ate_zoom.sh
+sbatch scripts/eval_lvb_ate_zoom.sh
+sbatch scripts/eval_videomme_ate_zoom.sh
+sbatch scripts/eval_answer_token_entropy_zoom.sh   # LongVideoReason
 ```
 
-Or via the SLURM script (edit paths inside first):
+### ATE multi-tool (zoom + frame inspect)
+
+Requires [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval) with the task configs in `lmms_eval/tasks/`:
+
 ```bash
-sbatch scripts/eval_answer_entropy_zoom.sh
+sbatch scripts/eval_mlvu_mt.sh
+sbatch scripts/eval_lvb_mt.sh
+sbatch scripts/eval_lvbench_mt.sh
+sbatch scripts/eval_vmme_mt.sh
+sbatch scripts/eval_lvr_mt.sh
 ```
 
-**Key arguments:**
+### Open-loop multi-tool
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--score_mode` | `hmm` | Set to `answer_entropy` to enable the entropy gate |
-| `--entropy_threshold` | `-0.30` | Skip zoom when `score = -H_answer > threshold` |
-| `--answer_k` | `5` | Number of temperature samples |
-| `--answer_temperature` | `0.7` | Sampling temperature |
-| `--fps` | `0.5` | Frame rate for R1 video load |
-| `--frames_upbound` | `64` | Max frames per round |
-| `--max_rounds` | `5` | Maximum tool call rounds |
-| `--batch_size` | `32` | vLLM batch size |
+```bash
+sbatch scripts/eval_mlvu_mt_open.sh
+sbatch scripts/eval_lvb_mt_open.sh
+sbatch scripts/eval_lvbench_mt_open.sh
+sbatch scripts/eval_vmme_mt_open.sh
+sbatch scripts/eval_lvr_mt_open.sh
+```
 
----
+### Error detection / uncertainty signals
 
-## Results
-
-| Benchmark | VideoZoomer (baseline) | VideoZoomer + Ours | Δ |
-|-----------|----------------------|-------------------|---|
-| LongVideoReason-eval (1k) | 76.10% | **79.20%** | +3.1 |
-| VideoMME (2.7k) | 61.89% | **63.07%** | +1.2 |
-| LongVideoBench-Val (1.3k) | 56.10% | **56.25%** | +0.1 |
+```bash
+sbatch scripts/eval_error_detection.sh       # baseline greedy + U_vote, U_traj
+sbatch scripts/eval_beam_uncertainty.sh      # beam-path entropy signals
+```
 
 ---
 
 ## Repository Structure
 
 ```
-main_infer_hmm_zoom.py          Primary inference: VideoZoomer + answer entropy gate
-main_infer_adaptive_zoom.py     Base module: data loading, video I/O, prompt builders
+main_infer_hmm_zoom.py            ATE zoom gate (primary single-tool)
+main_infer_error_detection.py     Baseline for first-error detection
+main_infer_beam_uncertainty.py    Beam-path uncertainty signals
+main_infer_tool_uncertainty.py    Multi-round tool uncertainty
+main_infer_tool.py                Always-zoom baseline
+main_infer_greedy.py              No-tool greedy baseline
 scripts/
-  eval_answer_entropy_zoom.sh   SLURM evaluation script
+  eval_*_ate_zoom.sh              ATE single-tool eval (per benchmark)
+  eval_*_mt.sh                    ATE multi-tool eval
+  eval_*_mt_open.sh               Open-loop multi-tool eval
+  eval_beam_uncertainty.sh        Beam uncertainty signals
 longvideo-reason/
-  eval_longvideoreason.yaml     Dataset config (edit json_path before use)
+  LongVideoReason_test_fixed.json Test set (fixed answer format)
+  eval_longvideoreason.yaml       Dataset config
 ```
